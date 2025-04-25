@@ -2,6 +2,8 @@
 
 OneSecondVideoSynthesiser is a Python application that allows you to select multiple videos via a graphical user interface (GUI), extract a random one-second clip from each, and synthesise them into a single output video! The clips are combined in the order of selection, and the process can be rerun to generate new random selections. It supports over 1000 videos and various formats like MP4, MOV, AVI, and MKV.
 
+![OneSecondVideoSynthesiser](https://github.com/user-attachments/assets/010ef73f-be08-4a46-8703-bf60b8080b90)
+
 ## Features
 - Select individual video files or an entire directory of videos.
 - Option to sort directory videos by name (alphabetical) or date modified.
