@@ -8,7 +8,7 @@ import queue
 import random
 import os
 from moviepy.editor import VideoFileClip, concatenate_videoclips, ColorClip, CompositeVideoClip
-from PIL import Image
+from PIL import Image, ImageTk
 
 # Monkey patch moviepy's resize method to use the new constant
 def patch_resize():
@@ -27,46 +27,140 @@ class OneSecondVideoSynthesiser:
     def __init__(self, root):
         self.root = root
         self.root.title("One Second Video Synthesiser")
-
+        self.root.geometry("800x600")
+        
+        # Create main frame
+        main_frame = tk.Frame(root, bg='#f0f0f0')
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Header
+        header = tk.Label(main_frame, text="One Second Video Synthesiser", 
+                         font=('Helvetica', 12, 'bold'), bg='#f0f0f0')
+        header.pack(pady=10)
+        
+        # Button frame
+        button_frame = tk.Frame(main_frame, bg='#f0f0f0')
+        button_frame.pack(fill=tk.X, pady=5)
+        
+        # Create GUI widgets
+        self.select_videos_btn = tk.Button(button_frame, text="Select Videos", 
+                                         command=self.select_videos)
+        self.select_videos_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Directory sorting options
+        sort_frame = tk.LabelFrame(button_frame, text="Directory Sorting Options", bg='#f0f0f0')
+        sort_frame.pack(side=tk.LEFT, padx=5)
+        self.sort_option = tk.StringVar(value="name")
+        tk.Radiobutton(sort_frame, text="Sort by Name", 
+                      variable=self.sort_option, value="name", bg='#f0f0f0').pack(side=tk.LEFT, padx=5)
+        tk.Radiobutton(sort_frame, text="Sort by Date", 
+                      variable=self.sort_option, value="date", bg='#f0f0f0').pack(side=tk.LEFT, padx=5)
+        
+        self.select_dir_btn = tk.Button(button_frame, text="Select Directory", 
+                                      command=self.select_directory)
+        self.select_dir_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.clear_list_btn = tk.Button(button_frame, text="Clear List", 
+                                      command=self.clear_list)
+        self.clear_list_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Create text widget with scrollbar
+        text_frame = tk.Frame(main_frame, bg='white', bd=2, relief=tk.SUNKEN)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        # Create scrollbar
+        scrollbar = tk.Scrollbar(text_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Create text widget
+        self.text_widget = tk.Text(text_frame, yscrollcommand=scrollbar.set,
+                                 font=('Helvetica', 10), wrap=tk.NONE,
+                                 height=20, width=80, bg='white', bd=0)
+        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure scrollbar
+        scrollbar.config(command=self.text_widget.yview)
+        
+        # Make text widget read-only
+        self.text_widget.config(state=tk.DISABLED)
+        
+        # Add a placeholder item
+        self.text_widget.config(state=tk.NORMAL)
+        self.text_widget.insert(tk.END, "No videos selected")
+        self.text_widget.config(state=tk.DISABLED)
+        
+        # Progress frame
+        progress_frame = tk.Frame(main_frame, bg='#f0f0f0')
+        progress_frame.pack(fill=tk.X, pady=5)
+        
+        self.progress_bar = ttk.Progressbar(progress_frame, orient="horizontal", 
+                                          length=300, mode="determinate")
+        self.progress_bar.pack(side=tk.LEFT, padx=5)
+        
+        self.status_label = tk.Label(progress_frame, text="", bg='#f0f0f0')
+        self.status_label.pack(side=tk.LEFT, padx=5)
+        
+        # Generate button
+        self.generate_btn = tk.Button(main_frame, text="Generate", 
+                                    command=self.generate_video, 
+                                    bg='#4CAF50', fg='white')
+        self.generate_btn.pack(pady=10)
+        
         # List to store selected video paths
         self.selected_videos = []
         # Queue for progress updates
         self.progress_queue = queue.Queue()
 
-        # Sorting option for directory selection
-        self.sort_option = tk.StringVar(value="name")
+    def format_size(self, size_bytes):
+        """Convert bytes to human readable format"""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024.0:
+                return f"{size_bytes:.1f} {unit}"
+            size_bytes /= 1024.0
+        return f"{size_bytes:.1f} TB"
 
-        # Create GUI widgets
-        self.select_videos_btn = tk.Button(root, text="Select Videos", command=self.select_videos)
-        self.select_videos_btn.pack(pady=5)
+    def add_videos(self, videos):
+        """Add selected videos to the text widget, avoiding duplicates."""
+        print(f"Adding videos: {videos}")
+        # Enable text widget for editing
+        self.text_widget.config(state=tk.NORMAL)
+        
+        # Clear the placeholder if it exists
+        if self.text_widget.get("1.0", tk.END).strip() == "No videos selected":
+            print("Clearing placeholder...")
+            self.text_widget.delete("1.0", tk.END)
+            
+        for video in videos:
+            if video not in self.selected_videos:
+                print(f"Adding video: {video}")
+                self.selected_videos.append(video)
+                # Just show the filename in the text widget
+                self.text_widget.insert(tk.END, os.path.basename(video) + "\n")
+                print(f"Current text contents: {self.text_widget.get('1.0', tk.END)}")
+        
+        # Disable text widget again
+        self.text_widget.config(state=tk.DISABLED)
+        # Force update the display
+        self.root.update_idletasks()
 
-        # Directory sorting options
-        sort_frame = tk.LabelFrame(root, text="Directory Sorting Options")
-        sort_frame.pack(pady=5)
-        tk.Radiobutton(sort_frame, text="Sort by Name", variable=self.sort_option, value="name").pack(side="left")
-        tk.Radiobutton(sort_frame, text="Sort by Date Modified", variable=self.sort_option, value="date").pack(side="left")
-
-        self.select_dir_btn = tk.Button(root, text="Select Directory", command=self.select_directory)
-        self.select_dir_btn.pack(pady=5)
-
-        self.listbox = tk.Listbox(root, width=100, height=10)
-        self.listbox.pack(pady=5)
-
-        self.clear_list_btn = tk.Button(root, text="Clear List", command=self.clear_list)
-        self.clear_list_btn.pack(pady=5)
-
-        self.progress_bar = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
-        self.progress_bar.pack(pady=5)
-
-        self.status_label = tk.Label(root, text="")
-        self.status_label.pack(pady=5)
-
-        self.generate_btn = tk.Button(root, text="Generate", command=self.generate_video)
-        self.generate_btn.pack(pady=5)
+    def clear_list(self):
+        """Clear the selected videos list and the text widget."""
+        print("Clearing list...")
+        self.selected_videos.clear()
+        self.text_widget.config(state=tk.NORMAL)
+        self.text_widget.delete("1.0", tk.END)
+        # Add placeholder back
+        self.text_widget.insert(tk.END, "No videos selected")
+        self.text_widget.config(state=tk.DISABLED)
+        print("List cleared")
+        # Force update the display
+        self.root.update_idletasks()
 
     def select_videos(self):
         """Open file dialog to select multiple video files."""
+        print("Opening file dialog...")
         videos = filedialog.askopenfilenames(filetypes=[("Video files", "*.mp4 *.mov *.avi *.mkv")])
+        print(f"Selected videos: {videos}")
         self.add_videos(videos)
 
     def select_directory(self):
@@ -92,18 +186,6 @@ class OneSecondVideoSynthesiser:
             return sorted(video_files, key=os.path.getmtime)
         else:
             return video_files  # Unsorted fallback
-
-    def add_videos(self, videos):
-        """Add selected videos to the listbox, avoiding duplicates."""
-        for video in videos:
-            if video not in self.selected_videos:
-                self.selected_videos.append(video)
-                self.listbox.insert(tk.END, video)
-
-    def clear_list(self):
-        """Clear the selected videos list and the listbox."""
-        self.selected_videos.clear()
-        self.listbox.delete(0, tk.END)
 
     def generate_video(self):
         """Start the video generation process."""
