@@ -10,6 +10,7 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips, ColorClip, Com
 from PIL import Image, ImageTk
 import sys
 import argparse  # FIX: Needed for terminal mode
+import itertools
 
 # Monkey patch moviepy's resize method to use the new constant
 def patch_resize():
@@ -205,26 +206,30 @@ class OneSecondVideoSynthesiser:
         button_frame.pack(fill=tk.X, pady=5)
         
         # Create GUI widgets
-        self.select_videos_btn = tk.Button(button_frame, text="Select Videos", 
-                                         command=self.select_videos)
-        self.select_videos_btn.pack(side=tk.LEFT, padx=5)
-        
+        self.select_videos_btn = tk.Button(
+            button_frame, text="Select Videos", command=self.select_videos,
+            height=2
+        )
+        self.select_videos_btn.pack(side=tk.LEFT, padx=5, pady=5, fill=tk.Y, expand=False)
+
         # Directory sorting options
         sort_frame = tk.LabelFrame(button_frame, text="Directory Sorting Options", bg='#f0f0f0')
-        sort_frame.pack(side=tk.LEFT, padx=5)
+        sort_frame.pack(side=tk.LEFT, padx=5, pady=5, fill=tk.Y, expand=False)
         self.sort_option = tk.StringVar(value="name")
         tk.Radiobutton(sort_frame, text="Sort by Name", 
-                      variable=self.sort_option, value="name", bg='#f0f0f0').pack(side=tk.LEFT, padx=5)
+                       variable=self.sort_option, value="name", bg='#f0f0f0').pack(side=tk.LEFT, padx=5, pady=5)
         tk.Radiobutton(sort_frame, text="Sort by Date", 
-                      variable=self.sort_option, value="date", bg='#f0f0f0').pack(side=tk.LEFT, padx=5)
-        
-        self.select_dir_btn = tk.Button(button_frame, text="Select Directory", 
-                                      command=self.select_directory)
-        self.select_dir_btn.pack(side=tk.LEFT, padx=5)
-        
-        self.clear_list_btn = tk.Button(button_frame, text="Clear List", 
-                                      command=self.clear_list)
-        self.clear_list_btn.pack(side=tk.LEFT, padx=5)
+                       variable=self.sort_option, value="date", bg='#f0f0f0').pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.select_dir_btn = tk.Button(
+            button_frame, text="Select Directory", command=self.select_directory, height=2
+        )
+        self.select_dir_btn.pack(side=tk.LEFT, padx=5, pady=5, fill=tk.Y, expand=False)
+
+        self.clear_list_btn = tk.Button(
+            button_frame, text="Clear List", command=self.clear_list, height=2
+        )
+        self.clear_list_btn.pack(side=tk.LEFT, padx=5, pady=5, fill=tk.Y, expand=False)
         
         # Create text widget with scrollbar
         text_frame = tk.Frame(main_frame, bg='white', bd=2, relief=tk.SUNKEN)
@@ -262,6 +267,12 @@ class OneSecondVideoSynthesiser:
         self.status_label = tk.Label(progress_frame, text="", bg='#f0f0f0')
         self.status_label.pack(side=tk.LEFT, padx=5)
         
+        # Spinner label
+        self.busy = False
+        self.spinner_label = tk.Label(progress_frame, text="", bg='#f0f0f0', font=('Helvetica', 12))
+        self.spinner_label.pack(side=tk.LEFT, padx=10)
+        self.spinner_cycle = itertools.cycle(['|', '/', '-', '\\'])
+
         # Generate button (FIX: green with white text)
         self.generate_btn = tk.Button(main_frame, text="Generate", 
                                     command=self.generate_video, 
@@ -333,6 +344,20 @@ class OneSecondVideoSynthesiser:
             videos = get_video_files(directory, sort_by)
             self.add_videos(videos)
 
+    def show_spinner(self):
+        if self.busy:
+            self.spinner_label.config(text=next(self.spinner_cycle))
+            self.root.after(100, self.show_spinner)
+        else:
+            self.spinner_label.config(text="")
+
+    def set_busy(self, busy=True):
+        self.busy = busy
+        if busy:
+            self.show_spinner()
+        else:
+            self.spinner_label.config(text="")
+
     def generate_video(self):
         """Start the video generation process."""
         if not self.selected_videos:
@@ -354,10 +379,17 @@ class OneSecondVideoSynthesiser:
         self.progress_bar['value'] = 0
         self.status_label.config(text="Starting...")
 
+        # Show spinner
+        self.set_busy(True)
+
         # Start processing in a separate thread
-        worker = threading.Thread(target=process_videos, args=(self.selected_videos, output_file, self.progress_queue, True))
+        worker = threading.Thread(target=self._process_and_stop_spinner, args=(output_file,))
         worker.start()
         self.check_queue()
+
+    def _process_and_stop_spinner(self, output_file):
+        process_videos(self.selected_videos, output_file, self.progress_queue, True)
+        self.set_busy(False)
 
     def check_queue(self):
         """Check the progress queue and update the GUI."""
