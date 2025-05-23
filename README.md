@@ -42,62 +42,118 @@ Ensure FFmpeg is installed and accessible in your system PATH.
 3. Save the Script: The main application script is synthesis.py, included in this repository. No additional steps are needed if cloned.
 
 ## Usage
-Follow these steps to use OneSecondVideoSynthesiser:
 
-Step 1: Run the Application
-Launch the script from your terminal or command prompt:
+### GUI Version
+
+Follow these steps to use OneSecondVideoSynthesiser with the graphical interface:
+
+1. **Run the Application**
+
+   Launch the script from your terminal or command prompt:
+
+   ```bash
+   python synthesis.py
+   ```
+
+   A GUI window titled "One Second Video Synthesiser" will appear.
+
+2. **Select Videos**
+
+   You have two options to add videos:
+
+   - **Select Videos:**
+     - Click the "Select Videos" button.
+     - In the file dialog, choose one or more video files (e.g., .mp4, .mov, .avi, .mkv).
+     - Selected video paths will appear in the listbox.
+
+   - **Select Directory:**
+     - Choose a sorting option under "Directory Sorting Options":
+       - "Sort by Name" (default): Orders videos alphabetically.
+       - "Sort by Date Modified": Orders videos by modification date (oldest first).
+     - Click the "Select Directory" button.
+     - Pick a folder containing video files. All supported videos in the folder (and subfolders) will be added to the listbox in the chosen order.
+
+3. **Review and Clear (Optional)**
+
+   Review the list of videos in the listbox.  
+   To start over, click "Clear List" to remove all selected videos.
+
+4. **Generate the Video**
+
+   Click the "Generate" button.  
+   In the save dialog, choose a location and name for the output file (e.g., output.mp4).  
+   Watch the progress bar and status label:
+   - The progress bar fills as each video is processed.
+   - Status updates show the current video number or "Writing final video...".
+   - When complete, the status will read "Video generated successfully!"
+
+5. **Rerun (Optional)**
+
+   To create a new video with different random clips:
+   1. Keep the same video list or modify it.
+   2. Click "Generate" again and choose a new output file name.
+   3. Each run generates a fresh random selection of one-second clips.
+
+---
+
+### Terminal Version
+
+You can also use OneSecondVideoSynthesiser directly from the terminal (no GUI).  
+This is useful for automation or running on servers.
+
+#### Example Usage
 
 ```bash
-python synthesis.py
+python synthesis.py /path/to/video_directory -o output.mp4
 ```
 
-A GUI window titled "One Second Video Synthesiser" will appear.
+- `/path/to/video_directory`: The directory containing your video files.
+- `-o output.mp4`: The name of the output video file (default: saves in current directory).
 
-Step 2: Select Videos
-You have two options to add videos:
+#### Additional Options
 
-Select Videos:
-- Click the "Select Videos" button.
-- In the file dialog, choose one or more video files (e.g., .mp4, .mov, .avi, .mkv).
-- Selected video paths will appear in the listbox.
+- **Specify an output directory:**
+  ```bash
+  python synthesis.py /path/to/video_directory -o output.mp4 --output-dir /path/to/save
+  ```
+  This will save the output as `/path/to/save/output.mp4`.
 
-Select Directory:
-- Choose a sorting option under "Directory Sorting Options":
-- "Sort by Name" (default): Orders videos alphabetically.
-- "Sort by Date Modified": Orders videos by modification date (oldest first).
-- Click the "Select Directory" button.
-- Pick a folder containing video files. All supported videos in the folder (and subfolders) will be added to the listbox in the chosen order.
+- **Sort by date modified:**
+  ```bash
+  python synthesis.py /path/to/video_directory -s date -o output.mp4
+  ```
+- **Sort by name (default):**
+  ```bash
+  python synthesis.py /path/to/video_directory -s name -o output.mp4
+  ```
+- **Show help:**
+  ```bash
+  python synthesis.py --help
+  ```
 
-Step 3: Review and Clear (Optional)
-Review the list of videos in the listbox.
-To start over, click "Clear List" to remove all selected videos.
+#### Example
 
-Step 4: Generate the Video
-Click the "Generate" button.
-In the save dialog, choose a location and name for the output file (e.g., output.mp4).
-Watch the progress bar and status label:
-The progress bar fills as each video is processed.
-Status updates show the current video number or "Writing final video...".
-When complete, the status will read "Video generated successfully!"
+```bash
+python synthesis.py ./myvideos -s date -o montage.mp4 --output-dir ./exports
+```
 
-Step 5: Rerun (Optional)
-To create a new video with different random clips:
-1. Keep the same video list or modify it.
-2. Click "Generate" again and choose a new output file name.
-3. Each run generates a fresh random selection of one-second clips.
+This will process all supported videos in the `./myvideos` directory (and subdirectories), sort them by modification date, extract a random one-second clip from each, and combine them into `./exports/montage.mp4`.
+
+---
 
 ### Notes
-Supported Formats: MP4, MOV, AVI, MKV, and others supported by FFmpeg.
-Video Requirements: Videos must be at least 1 second long; shorter videos are skipped.
-Resolution: The output matches the resolution of the first video, with other clips resized and centered on a black background.
-Performance: Processing time depends on video size and count, but memory usage is optimized for large batches.
+- **Supported Formats:** MP4, MOV, AVI, MKV, and others supported by FFmpeg.
+- **Video Requirements:** Videos must be at least 1 second long; shorter videos are skipped.
+- **Resolution:** The output matches the resolution of the first video, with other clips resized and centered on a black background.
+- **Performance:** Processing time depends on video size and count, but memory usage is optimized for large batches.
 
 ### Troubleshooting
-FFmpeg Not Found: Ensure FFmpeg is installed and in your PATH. Test with ffmpeg -version in your terminal.
-Errors During Processing: Check the error message in the popup. Common issues include corrupted videos or unsupported codecs.
-GUI Freezes: The app uses threading to stay responsive, but very large files may slow processing—wait for completion.
-Contributing
+- **FFmpeg Not Found:** Ensure FFmpeg is installed and in your PATH. Test with `ffmpeg -version` in your terminal.
+- **Errors During Processing:** Check the error message in the popup or terminal. Common issues include corrupted videos or unsupported codecs.
+- **GUI Freezes:** The app uses threading to stay responsive, but very large files may slow processing—wait for completion.
+
+## Contributing
 Feel free to fork this repository, submit issues, or create pull requests with improvements!
 
-### License
-This project is licensed under the MIT License—see the  file for details.
+## License
+This project is licensed under the MIT License—see the LICENSE file for details.
